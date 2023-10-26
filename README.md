@@ -24,4 +24,8 @@ See the challenge specification [here](https://codingchallenges.fyi/challenges/c
 ### testing.py
 In the file testing.py, you can see how the program was tested against the test suite from http://www.json.org/JSON_checker  
 
-![console screenshot](console.png)
+![console screenshot](console.png)  
+
+### To Do
+- Write tests using Python unittest framework
+- Improve exception handling messages
