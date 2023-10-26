@@ -20,4 +20,4 @@ See the challenge specification [here](https://codingchallenges.fyi/challenges/c
 - This can be tested using the provided files validjson.json (enter command `python pyparse.py validjson.json`) and invalidjson.json (enter command `python pyparse.py invalidjson.json`)
 
 ### testing.py
-In the file testing.py, you can see how the program was tested against the test suite from [http://www.json.org/JSON_checker]([http://www.json.org/JSON_checker)
+In the file testing.py, you can see how the program was tested against the test suite from http://www.json.org/JSON_checker
