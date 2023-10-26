@@ -19,5 +19,9 @@ See the challenge specification [here](https://codingchallenges.fyi/challenges/c
 - program will return the parsed JSON if valid; otherwise an exception will be raised
 - This can be tested using the provided files validjson.json (enter command `python pyparse.py validjson.json`) and invalidjson.json (enter command `python pyparse.py invalidjson.json`)
 
+![terminal screenshot](terminal.png)
+
 ### testing.py
-In the file testing.py, you can see how the program was tested against the test suite from http://www.json.org/JSON_checker
+In the file testing.py, you can see how the program was tested against the test suite from http://www.json.org/JSON_checker  
+
+![console screenshot](console.png)
