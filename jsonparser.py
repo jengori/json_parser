@@ -1,3 +1,6 @@
+class JsonException(Exception):
+    pass
+
 class JsonParser:
 
     def __init__(self):
@@ -6,17 +9,17 @@ class JsonParser:
         self.depth = 0
 
     def skip_whitespace(self):
-        while self.s[self.i] in [" ", "\n", "\t", "\r"]:
+        while self.i < len(self.s) and self.s[self.i] in [" ", "\n", "\t", "\r"]:
             self.i += 1
 
     def process_colon(self):
         if self.s[self.i] != ":":
-            raise Exception('Invalid JSON: Expected ":"')
+            raise JsonException('Invalid JSON: Expected ":"')
         self.i += 1
 
     def process_comma(self):
         if self.s[self.i] != ",":
-            raise Exception('Invalid JSON: Expected ","')
+            raise JsonException('Invalid JSON: Expected ","')
         self.i += 1
 
     def parse_object(self):
@@ -49,46 +52,48 @@ class JsonParser:
             return result
 
     def parse_string(self):
+        try:
+            if self.s[self.i] == '"':
+                result = ""
+                self.i += 1
+                self.skip_whitespace()
 
-        if self.s[self.i] == '"':
-            result = ""
-            self.i += 1
-            self.skip_whitespace()
+                while self.s[self.i] != '"':
 
-            while self.s[self.i] != '"':
+                    if self.s[self.i] == "\\":
+                        char = self.s[self.i + 1]
+                        if char in ['"', "\\", "/", "b", "f", "n", "r", "t"]:
+                            result += char
+                            self.i += 1
 
-                if self.s[self.i] == "\\":
-                    char = self.s[self.i + 1]
-                    if char in ['"', "\\", "/", "b", "f", "n", "r", "t"]:
-                        result += char
-                        self.i += 1
+                        elif char == "u":
+                            if is_hexadecimal(self.s[self.i + 2]) and \
+                                    is_hexadecimal(self.s[self.i + 3]) and \
+                                    is_hexadecimal(self.s[self.i + 4]) + \
+                                    is_hexadecimal(self.s[self.i + 5]):
+                                result += chr(int(self.s[self.i+2: self.i+6], 16))
+                                self.i += 5
 
-                    elif char == "u":
-                        if is_hexadecimal(self.s[self.i + 2]) and \
-                                is_hexadecimal(self.s[self.i + 3]) and \
-                                is_hexadecimal(self.s[self.i + 4]) + \
-                                is_hexadecimal(self.s[self.i + 5]):
-                            result += chr(int(self.s[self.i+2: self.i+6], 16))
-                            self.i += 5
-
-                    else:
-                        raise Exception('Invalid JSON: Illegal backslash escape sequence')
-
-                else:
-
-                    if self.s[self.i] == '\t':
-                        raise Exception('Invalid JSON: tab character in string')
-
-                    elif self.s[self.i] == '\n':
-                        raise Exception('Invalid JSON: line break in string')
+                        else:
+                            raise JsonException('Invalid JSON: Illegal backslash escape sequence')
 
                     else:
-                        result += self.s[self.i]
+
+                        if self.s[self.i] == '\t':
+                            raise JsonException('Invalid JSON: tab character in string')
+
+                        elif self.s[self.i] == '\n':
+                            raise JsonException('Invalid JSON: line break in string')
+
+                        else:
+                            result += self.s[self.i]
+                    self.i += 1
+
                 self.i += 1
 
-            self.i += 1
-
-            return result
+                return result
+        except IndexError:
+            raise JsonException("Invalid JSON: Missing closing quote")
 
     def parse_number(self):
         start = self.i
@@ -117,7 +122,10 @@ class JsonParser:
                 self.i += 1
 
         if self.i > start:
-            number = float(self.s[start:self.i])
+            try:
+                number = float(self.s[start:self.i])
+            except ValueError:
+                raise JsonException(f'Invalid JSON: Invalid number (\'{self.s[start:self.i]}\')')
             if float(number) % 1 == 0:
                 return int(number)
             else:
@@ -129,7 +137,7 @@ class JsonParser:
             self.i += len(name)
             return value
         if name == "null":
-            raise Exception("Invalid JSON: Missing value")
+            raise JsonException("Invalid JSON: Missing value")
 
     def parse_array(self):
 
@@ -137,20 +145,23 @@ class JsonParser:
             self.i += 1
             self.depth += 1
             if self.depth > 19:
-                raise Exception("Exceeds maximum depth allowed for this parser.")
+                raise JsonException("Exceeds maximum depth allowed for this parser.")
             self.skip_whitespace()
 
             result = []
             initial = True
 
-            while self.s[self.i] != "]":
-                if not initial:
-                    self.process_comma()
+            try:
+                while self.s[self.i] != "]":
+                    if not initial:
+                        self.process_comma()
+                        self.skip_whitespace()
+                    value = self.parse_value()
                     self.skip_whitespace()
-                value = self.parse_value()
-                self.skip_whitespace()
-                result.append(value)
-                initial = False
+                    result.append(value)
+                    initial = False
+            except IndexError:
+                raise JsonException("Invalid JSON: Missing closing bracket")
 
             self.i += 1
             self.depth -= 1
@@ -178,12 +189,12 @@ class JsonParser:
         self.depth = 0
         self.skip_whitespace()
         if s[self.i] not in ["[", "{"]:
-            raise Exception('A JSON payload should be an object or array')
+            raise JsonException('A JSON payload should be an object or array')
         output = self.parse_value()
         try:
             self.skip_whitespace()
             char = self.s[self.i]
-            raise Exception(f'Invalid JSON: Extra character "{char}" after close.')
+            raise JsonException(f'Invalid JSON: Extra character "{char}" after close.')
         except IndexError:
             pass
 
